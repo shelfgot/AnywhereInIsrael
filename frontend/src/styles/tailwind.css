@@ -1,0 +1,11 @@
+/* src/styles/globals.css */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb;
+    color: #333;
+  }
+  
+  h1, h2, h3 {
+    color: #4CAF50;
+  }
+  
