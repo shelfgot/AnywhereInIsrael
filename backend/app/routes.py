@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from app import db, login_manager
+from app import db, login_manager, limiter
 from app.models import User, HostAvailability, StudentRequest, Match
 from app.whatsapp import send_whatsapp_message
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import login_user, logout_user, login_required, current_user # Import login functions
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -12,36 +13,60 @@ main = Blueprint('main', __name__)
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
+
 @main.route('/')
 def home():
     return jsonify({'message': 'Welcome to Anywhere in Israel'}), 200
 
 @main.route('/api/register', methods=['POST'])
+@limiter.limit("5/minute") # Limit to 5 requests per minute
 def register():
     data = request.get_json()
     phone = data.get('phone')
     name = data.get('name')
     role = data.get('role')  # 'student' or 'host'
     password = data.get('password') # Get the password
+    confirmPassword = data.get('confirmPassword') # Get the password conf
+    print(f"{phone} {name} {role} {password} {confirmPassword}")
 
-    if not all([phone, name, role]):
+    if password != confirmPassword:
+        return jsonify({'error': 'Passwords do not match'}), 400
+        
+
+    if not all([phone, name, role, password, confirmPassword]):
         return jsonify({'error': 'Missing fields'}), 400
 
     user = User.query.filter_by(phone=phone).first()
     if user:
         return jsonify({'error': 'User already exists'}), 400
 
-    new_user = User(name=name, phone=phone, role=role)
-    new_user.set_password(password) #  Hash the password
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        new_user = User(name=name, phone=phone, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        print(f"IntegrityError: {e}")
+        return jsonify({'error': 'A user with this phone number already exists'}), 400
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"SQLAlchemyError: {e}")
+        return jsonify({'error': 'Database error'}), 500
+    except Exception as e:
+        db.session.rollback()
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
 
-    return jsonify({'message': 'User registered successfully'}), 201
+    return jsonify({'message': 'User registered successfully'}, 201)
 
 @main.route('/api/login', methods=['POST'])
+@limiter.limit("5/minute") # Limit to 5 requests per minute
 def login():
     data = request.get_json()
     phone = data.get('phone')
+    role = data.get('role')
     password = data.get('password')
 
     user = User.query.filter_by(phone=phone).first()
@@ -52,7 +77,7 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     login_user(user) #  Log the user in
-    return jsonify({'message': 'Login successful', 'user': {'name': user.name, 'role': user.role, 'id': user.id}}), 200
+    return jsonify({'message': 'Login successful', 'user': {'name': user.name, 'role': role, 'id': user.id}}), 200
 
 @main.route('/api/logout', methods=['POST'])
 @login_required #  Protect this route

@@ -7,15 +7,27 @@ from .config import Config
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.exceptions import HTTPException
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 db = SQLAlchemy()
 login_manager = LoginManager() # Initialize LoginManager
+limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"]
+    )
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     from app.routes import main
     app.register_blueprint(main)
+
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter.init_app(app)
+    
 
     CORS(app)
     db.init_app(app)

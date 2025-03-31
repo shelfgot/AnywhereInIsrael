@@ -1,16 +1,18 @@
+"use client"
 import { useState } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const Login = () => {
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('/api/login', { phone });
+      const response = await axios.post('/api/login', { phone, password });
       if (response.status === 200) {
         router.push('/dashboard');
       }
@@ -24,7 +26,7 @@ const Login = () => {
       <h2 className="text-3xl font-bold text-center mb-6">Login</h2>
       <form onSubmit={handleLogin}>
         <div className="mb-4">
-          <label className="block text-gray-700" htmlFor="phone">Phone Number</label>
+          <label className="block text-gray-700" htmlFor="phone">phone</label>
           <input
             type="text"
             id="phone"
@@ -33,6 +35,17 @@ const Login = () => {
             className="w-full p-2 border border-gray-300 rounded-lg"
             required
           />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700" htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg"
+            required
+          />  
         </div>
 
         <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700">

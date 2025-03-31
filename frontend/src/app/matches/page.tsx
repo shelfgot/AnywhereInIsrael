@@ -1,7 +1,8 @@
+"use client"
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import MatchDetails from '../components/MatchDetails';
-import { api } from '../utils/api';
+import { useRouter } from 'next/navigation';
+import MatchDetails from '../../components/MatchDetails';
+import { api } from '../../utils/api';
 
 const MatchesPage = () => {
   const router = useRouter();
