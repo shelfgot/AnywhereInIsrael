@@ -1,0 +1,2 @@
+### Under construction
+AnywhereInIsrael was a project begun at the turn of the century aiming to match students in Israel for the year with hosts all across the country. The following repo will, in time, host the project which aims to revive it for the 21st century.
